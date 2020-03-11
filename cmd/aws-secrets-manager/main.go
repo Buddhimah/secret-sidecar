@@ -18,16 +18,11 @@ import (
 )
 
 func main() {
-	//os.Setenv("SECRET_NAME", "catsndogs")
-	//os.Setenv("AWS_REGION", "us-east-1")
-	fmt.Println("==============START ADDING KEYSTORE PASSWORD============")
+	fmt.Println("==============INIT Container Started============")
 	SecretName := os.Getenv("SECRET_NAME")
 	AWSRegion := os.Getenv("AWS_REGION")
-	IS_HOME := os.Getenv("IS_HOME")
-
-	fmt.Println("==============IS HOME============")
-	fmt.Println(IS_HOME)
-	writeOutputDummy("TEST STRING","/home/")
+	PASSWORD_HOME := os.Getenv("PASSWORD_HOME")
+	FILE_PATH := PASSWORD_HOME + "password-tmp"
 	sess, err := session.NewSession()
 	svc := secretsmanager.New(sess, &aws.Config{
 		Region: aws.String(AWSRegion),
@@ -67,14 +62,14 @@ func main() {
 		secretString = *result.SecretString
 		var result map[string]interface{}
 		json.Unmarshal([]byte(secretString), &result)
-		fmt.Println(secretString)
 
-		// The object stored in the "birds" key is also stored as
-		// a map[string]interface{} type, and its type is asserted from
-		// the interface{} type
 		keystorePass := result[SecretName]
-		writeOutput(keystorePass.(string), IS_HOME)
-		fmt.Println(keystorePass.(string))
+		if keystorePass != nil {
+			fmt.Println("Fetched password is null")
+			return
+		}
+
+		writeOutput(keystorePass.(string), FILE_PATH)
 	} else {
 		decodedBinarySecretBytes := make([]byte, base64.StdEncoding.DecodedLen(len(result.SecretBinary)))
 		len, err := base64.StdEncoding.Decode(decodedBinarySecretBytes, result.SecretBinary)
@@ -83,37 +78,25 @@ func main() {
 			return
 		}
 		decodedBinarySecret = string(decodedBinarySecretBytes[:len])
-		writeOutput(decodedBinarySecret, IS_HOME)
-		fmt.Println(decodedBinarySecret)
+		writeOutput(decodedBinarySecret, FILE_PATH)
 	}
 }
 func writeOutput(output string, path string) {
 	fmt.Println("=====WRITE TO FILE=====")
-	fmt.Println(path + "password-persist")
-	fmt.Println("=====OUTPUT VALUE=====")
-	fmt.Println(output)
-	f, err := os.Create(path + "password-persist")
+	f, err := os.Create(path)
 	if err != nil {
+		f.WriteString("Error while writing the password to file. ")
 		return
 	}
 	defer f.Close()
 	
 	f.WriteString(output)
-	readOutput(path + "password-persist")
+	readOutput(path)
 }
 
-func writeOutputDummy(output string, path string) {
-	f, err := os.Create("/tmp/secret")
-	if err != nil {
-		return
-	}
-	defer f.Close()
-
-	f.WriteString(output)
-}
 
 func readOutput( path string) {
-	fmt.Println("=====READ FROM FILE=====")
+	fmt.Println("======READ FROM FILE======")
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
@@ -122,4 +105,11 @@ func readOutput( path string) {
 	// Convert []byte to string and print to screen
 	text := string(content)
 	fmt.Println(text)
+
+	fmt.Println("=====CHANGE OWNERSHIP FROM ROOT USER TO WSO2 USER=====")
+	// Change permissions Linux.
+	os.Chmod(path, 0777)
+
+	// Change file ownership.
+	os.Chown(path, 802, 802)
 }
