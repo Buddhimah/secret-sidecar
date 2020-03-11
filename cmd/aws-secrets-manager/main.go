@@ -64,7 +64,7 @@ func main() {
 		json.Unmarshal([]byte(secretString), &result)
 
 		keystorePass := result[SecretName]
-		if keystorePass != nil {
+		if keystorePass == nil {
 			fmt.Println("Fetched password is null")
 			return
 		}
@@ -102,9 +102,11 @@ func readOutput( path string) {
 		log.Fatal(err)
 	}
 
-	// Convert []byte to string and print to screen
-	text := string(content)
-	fmt.Println(text)
+
+	if content == nil {
+		fmt.Println("File does not contain the expected contents. ")
+		return
+	}
 
 	fmt.Println("=====CHANGE OWNERSHIP FROM ROOT USER TO WSO2 USER=====")
 	// Change permissions Linux.
