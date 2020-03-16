@@ -18,11 +18,13 @@ import (
 )
 
 func main() {
-	fmt.Println("==============INIT Container Started============")
-	SecretName := os.Getenv("SECRET_NAME")
-	AWSRegion := os.Getenv("AWS_REGION")
-	PASSWORD_HOME := os.Getenv("PASSWORD_HOME")
-	FILE_PATH := PASSWORD_HOME + "password-tmp"
+
+	log.Print("aws.secret.manager: Initializing the password retrieving from AWS")
+	SecretName := os.Args[1]
+	AWSRegion := os.Args[2]
+	PASSWORD_HOME := os.Args[3]
+	FILE_NAME := "password-tmp"
+	FILE_PATH := PASSWORD_HOME + FILE_NAME
 	sess, err := session.NewSession()
 	svc := secretsmanager.New(sess, &aws.Config{
 		Region: aws.String(AWSRegion),
@@ -65,7 +67,7 @@ func main() {
 
 		keystorePass := result[SecretName]
 		if keystorePass == nil {
-			fmt.Println("Fetched password is null")
+			log.Print("aws.secret.manager: Fetched password is null.")
 			return
 		}
 
@@ -74,7 +76,7 @@ func main() {
 		decodedBinarySecretBytes := make([]byte, base64.StdEncoding.DecodedLen(len(result.SecretBinary)))
 		len, err := base64.StdEncoding.Decode(decodedBinarySecretBytes, result.SecretBinary)
 		if err != nil {
-			fmt.Println("Base64 Decode Error:", err)
+			log.Print("aws.secret.manager: Base64 Decode Error:", err)
 			return
 		}
 		decodedBinarySecret = string(decodedBinarySecretBytes[:len])
@@ -82,10 +84,11 @@ func main() {
 	}
 }
 func writeOutput(output string, path string) {
-	fmt.Println("=====WRITE TO FILE=====")
+
+	log.Print("aws.secret.manager: Writing the retrieved password to a file.")
 	f, err := os.Create(path)
 	if err != nil {
-		f.WriteString("Error while writing the password to file. ")
+		log.Print("aws.secret.manager: Error while writing the password to file.")
 		return
 	}
 	defer f.Close()
@@ -96,7 +99,8 @@ func writeOutput(output string, path string) {
 
 
 func readOutput( path string) {
-	fmt.Println("======READ FROM FILE======")
+
+	log.Print("aws.secret.manager: Reading from the file to validating the write process.")
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
@@ -104,11 +108,11 @@ func readOutput( path string) {
 
 
 	if content == nil {
-		fmt.Println("File does not contain the expected contents. ")
+		log.Print("aws.secret.manager: File does not contain the expected content.")
 		return
 	}
 
-	fmt.Println("=====CHANGE OWNERSHIP FROM ROOT USER TO WSO2 USER=====")
+	log.Print("aws.secret.manager: Changing the ownership of the file from root user to WSO2 user.")
 	// Change permissions Linux.
 	os.Chmod(path, 0777)
 
