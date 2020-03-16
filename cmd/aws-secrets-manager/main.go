@@ -19,7 +19,7 @@ import (
 
 func main() {
 
-	log.Print("aws.secret.manager: Initializing the password retrieving from AWS")
+	log.Print("INFO {org.wso2.aws.secret.manager} - Initializing the password retrieving from AWS.")
 	SecretName := os.Args[1]
 	AWSRegion := os.Args[2]
 	PASSWORD_HOME := os.Args[3]
@@ -67,7 +67,7 @@ func main() {
 
 		keystorePass := result[SecretName]
 		if keystorePass == nil {
-			log.Print("aws.secret.manager: Fetched password is null.")
+			log.Print("INFO {org.wso2.aws.secret.manager} - Fetched password is null.")
 			return
 		}
 
@@ -76,7 +76,7 @@ func main() {
 		decodedBinarySecretBytes := make([]byte, base64.StdEncoding.DecodedLen(len(result.SecretBinary)))
 		len, err := base64.StdEncoding.Decode(decodedBinarySecretBytes, result.SecretBinary)
 		if err != nil {
-			log.Print("aws.secret.manager: Base64 Decode Error:", err)
+			log.Print("INFO {org.wso2.aws.secret.manager} - Base64 Decode Error:", err)
 			return
 		}
 		decodedBinarySecret = string(decodedBinarySecretBytes[:len])
@@ -85,10 +85,10 @@ func main() {
 }
 func writeOutput(output string, path string) {
 
-	log.Print("aws.secret.manager: Writing the retrieved password to a file.")
+	log.Print("INFO {org.wso2.aws.secret.manager} - Writing the retrieved password to a file.")
 	f, err := os.Create(path)
 	if err != nil {
-		log.Print("aws.secret.manager: Error while writing the password to file.")
+		log.Print("ERROR {org.wso2.aws.secret.manager} - Error while writing the password to file.")
 		return
 	}
 	defer f.Close()
@@ -100,7 +100,7 @@ func writeOutput(output string, path string) {
 
 func readOutput( path string) {
 
-	log.Print("aws.secret.manager: Reading from the file to validating the write process.")
+	log.Print("INFO {org.wso2.aws.secret.manager} - Reading from the file to validating the write process.")
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
@@ -108,11 +108,11 @@ func readOutput( path string) {
 
 
 	if content == nil {
-		log.Print("aws.secret.manager: File does not contain the expected content.")
+		log.Print("INFO {org.wso2.aws.secret.manager} - File does not contain the expected content.")
 		return
 	}
 
-	log.Print("aws.secret.manager: Changing the ownership of the file from root user to WSO2 user.")
+	log.Print("INFO {org.wso2.aws.secret.manager} - Changing the ownership of the file from root user to WSO2 user.")
 	// Change permissions Linux.
 	os.Chmod(path, 0777)
 
